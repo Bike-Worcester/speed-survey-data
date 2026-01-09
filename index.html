@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Speeding Data Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+    }
+
+    h1 {
+      padding: 0.75rem 1rem;
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    #map {
+      height: 400px;
+    }
+
+    #location-detail {
+      padding: 1rem;
+      display: none;
+    }
+
+    .detail-header {
+      position: sticky;
+      top: 0;
+      background: #fff;
+      padding-bottom: 0.5rem;
+      z-index: 10;
+      border-bottom: 1px solid #ddd;
+    }
+
+    #back-to-map {
+      background: none;
+      border: none;
+      font-size: 1rem;
+      padding: 0;
+      margin-bottom: 0.25rem;
+      cursor: pointer;
+      color: #0077cc;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .stat {
+      background: #f5f5f5;
+      padding: 0.75rem;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.4rem;
+    }
+
+    .chart {
+      margin: 1.5rem 0;
+    }
+
+
+@media (min-width: 900px) {
+  #map-container {
+    position: relative;
+    width: 100%;
+    max-width: 100% /* adjust for heading */
+    overflow:hidden;
+  }
+
+  #map {
+    height: 700px;
+  }
+
+  #location-detail {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 35%;
+    height: 100%;
+    background: white;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.15);
+    overflow-y: auto;
+    z-index: 500;
+    box-sizing: border-box;
+  }
+    }
+
+  </style>
+</head>
+<body>
+
+<h1>Speeding data – tap a location</h1>
+<div id="map-container">
+
+<div id="map"></div>
+
+<div id="location-detail">
+  <div class="detail-header">
+    <button id="back-to-map">← Back to map</button>
+    <h2 id="location-name"></h2>
+    <p id="location-meta"></p>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <strong id="pct-speeding"></strong>
+      % speeding
+    </div>
+    <div class="stat">
+      <strong id="avg-speed"></strong>
+      mph average
+    </div>
+  </div>
+
+  <div class="chart">
+    <canvas id="distributionChart"></canvas>
+  </div>
+
+  <div class="chart">
+    <canvas id="timeChart"></canvas>
+  </div>
+</div>
+      </div>
+
+<script>
+  // --- Sample data ---
+  const locations = [
+    {
+      name: "London Rd",
+      lat: 52.192,
+      lon: -2.220,
+      limit: 30,
+      pctSpeeding: 42,
+      avgSpeed: 34,
+      distribution: [5, 18, 30, 25, 12, 10],
+      byTime: [20, 35, 55, 60, 48, 30]
+    },
+    {
+      name: "Bath Rd",
+      lat: 52.195,
+      lon: -2.235,
+      limit: 20,
+      pctSpeeding: 58,
+      avgSpeed: 27,
+      distribution: [2, 12, 20, 30, 20, 16],
+      byTime: [10, 25, 40, 55, 60, 45]
+    }
+  ];
+
+  // --- Map ---
+  const map = L.map("map").setView([52.193, -2.23], 14);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© OpenStreetMap"
+  }).addTo(map);
+
+  let distributionChart, timeChart;
+
+  function showDetails(location) {
+    document.getElementById("location-name").textContent = location.name;
+    document.getElementById("location-meta").textContent =
+      `Speed limit: ${location.limit} mph`;
+
+    document.getElementById("pct-speeding").textContent =
+      location.pctSpeeding;
+
+    document.getElementById("avg-speed").textContent =
+      location.avgSpeed;
+
+    document.getElementById("location-detail").style.display = "block";
+if (window.innerWidth < 900) {
+  document.getElementById("location-detail")
+    .scrollIntoView({ behavior: "smooth" });
+}
+
+    // Destroy old charts
+    if (distributionChart) distributionChart.destroy();
+    if (timeChart) timeChart.destroy();
+
+    // Distribution chart
+    distributionChart = new Chart(
+      document.getElementById("distributionChart"),
+      {
+        type: "bar",
+        data: {
+          labels: ["<20", "20–25", "25–30", "30–35", "35–40", "40+"],
+          datasets: [{
+            label: "Vehicle count (%)",
+            data: location.distribution
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } }
+        }
+      }
+    );
+
+    // Time of day chart
+    timeChart = new Chart(
+      document.getElementById("timeChart"),
+      {
+        type: "line",
+        data: {
+          labels: ["00", "04", "08", "12", "16", "20"],
+          datasets: [{
+            label: "% speeding",
+            data: location.byTime,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } }
+        }
+      }
+    );
+  }
+
+  // Add markers
+  locations.forEach(loc => {
+    const marker = L.circleMarker([loc.lat, loc.lon], {
+      radius: 8
+    }).addTo(map);
+
+    marker.on("click", () => showDetails(loc));
+  });
+
+  // Back to map
+  document.getElementById("back-to-map").onclick = () => {
+    document.getElementById("location-detail").style.display = "none";
+    if (window.innerWidth < 900) {
+      document.getElementById("map").scrollIntoView({ behavior: "smooth" });
+    };
+  }
+</script>
+
+</body>
+</html>
