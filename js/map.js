@@ -12,6 +12,8 @@ function initMap() {
 function addLocations(map, locations, charts) {
   // Add markers
   locations.forEach(loc => {
+    console.log("Adding location marker", loc.name);
+    console.log("Location data", loc.lat, loc.lon);
     const marker = L.circleMarker([loc.lat, loc.lon], {
       radius: 8
     }).addTo(map);

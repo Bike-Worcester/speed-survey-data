@@ -34,7 +34,7 @@ class ChartView {
   _renderTime(location) {
     const ctx = document.getElementById('timeChart');
 
-    if (!Array.isArray(location.byTime) || location.byTime.length === 0) {
+    if (!Array.isArray(location.time) || location.time.length === 0) {
       if (this.timeChart) {
         this.timeChart.destroy();
         this.timeChart = null;
@@ -46,7 +46,7 @@ class ChartView {
     if (!this.timeChart) {
       this.timeChart = createTimeChart(ctx, location)
     } else {
-      this.timeChart.data.datasets[0].data = location.byTime;
+      this.timeChart.data.datasets[0].data = location.time;
       this.timeChart.update();
     }
   }
@@ -84,8 +84,11 @@ function createTimeChart(ctx, location) {
   return new Chart(ctx, {
     type: 'line',
     data: {
-      labels: ['00', '04', '08', '12', '16', '20'],
-      datasets: [{ data: location.byTime, tension: 0.3 }]
+      labels: ['00', '01', '02', '03', '04', '05',
+        '06', '07', '08', '09', '10', '11',
+        '12', '13', '14', '15', '16', '17',
+        '18', '19', '20', '21', '22', '23'],
+      datasets: [{ data: location.time, tension: 0.3 }]
     },
     options: { plugins: { legend: { display: false } } }
   });
@@ -105,13 +108,17 @@ function createDistributionChart(ctx, location) {
 function showDetails(charts, location) {
   const name = location.name ?? 'Unknown location';
   const limit = location.limit ?? 'N/A';
-  const pctSpeeding = location.pctSpeeding ?? "N/A";
-  const avgSpeed = location.avgSpeed ?? "N/A";
+  const pctSpeeding =
+    location.vehicles_speeding_7_7_per_min === 0
+      ? "0.00"
+      : location.vehicles_speeding_7_7_per_min ?? "N/A";
+
+  const avgSpeed = location.percent_speeding_7_7 ?? "N/A";
   const distribution = Array.isArray(location.distribution)
     ? location.distribution
     : [];
-  const byTime = Array.isArray(location.byTime)
-    ? location.byTime
+  const time = Array.isArray(location.time)
+    ? location.time
     : [];
 
   // Update DOM safely
@@ -119,7 +126,7 @@ function showDetails(charts, location) {
   document.getElementById('location-meta').textContent =
     limit !== 'N/A' ? `Speed limit: ${limit} mph` : 'Speed limit: N/A';
   document.getElementById('pct-speeding').textContent = pctSpeeding;
-  document.getElementById('avg-speed').textContent = avgSpeed;
+  document.getElementById('avg-speed').textContent = avgSpeed + "%";
 
   const detailEl = document.getElementById('location-detail');
   detailEl.style.display = 'block';
@@ -132,7 +139,7 @@ function showDetails(charts, location) {
   charts.render({
     ...location,
     distribution,
-    byTime
+    time
   });
 }
 

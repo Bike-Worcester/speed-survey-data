@@ -4,6 +4,9 @@ import re
 from pathlib import Path
 import json
 
+#vehicles per hour speeding during 7 til 7pm
+# % veichles speeding during 7 til 7pm
+
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
@@ -64,6 +67,8 @@ def parse_speed_sheet(excel_file, sheet_name):
     # Bin columns
     header_row = df.iloc[header_row_index]
     bin_cols = [col for col in df.columns if re.match(r"Bin \d+", str(header_row[col]))]
+    #create a blank dataframe with columns: road_name, lat, lon, speed_bin, time, value
+    output = []
 
     # --- 3. Aggregate distribution ---
     distribution = [0] * len(bin_cols)
@@ -75,31 +80,73 @@ def parse_speed_sheet(excel_file, sheet_name):
             val = row.iloc[col]
             if val != "":
                 distribution[i] += float(val)
-
+                output.append({
+                    "road_name": sheet_name,
+                    "limit": speed_limit,
+                    "speed_bin": header_row[bin_cols[i]],
+                    "time": first_col,
+                    "value": float(val),
+                    "lat":lat, 
+                    "lon": lon,
+                    "start_date": start_date,
+                    "end_date": end_date
+                })
+    
     total_volume = sum(distribution)
 
-    return {
-        "name": road_name if road_name else sheet_name,
-        "lat": lat,
-        "lon": lon,
-        "limit": speed_limit if speed_limit else 0,
-        "dates": {"start": start_date, "end": end_date},
-        "distribution": distribution,
-        "total_volume": total_volume
-    }
+    return output
 
+    # return {
+    #     "name": road_name if road_name else sheet_name,
+    #     "lat": lat,
+    #     "lon": lon,
+    #     "limit": speed_limit if speed_limit else 0,
+    #     "dates": {"start": start_date, "end": end_date},
+    #     "distribution": distribution,
+    #     "total_volume": total_volume
+    # }
+
+def create_speed_bins_labels(odf):
+    odf["speed_bin"] = odf["speed_bin"].str.replace(r"^Bin\s+\d+\n", "", regex=True)
+    
+    odf["speed_bin"] = odf["speed_bin"].str.replace("MPH", "", regex=False)
+
+    range_df = odf["speed_bin"].str.extract(
+    r"(?P<speed_min>\d+)\s*-\s*<\s*(?P<speed_max>\d+)"
+    )
+
+
+    lt_df = odf["speed_bin"].str.extract(
+        r"(?<!=>)<\s*(?P<speed_max>\d+)"
+    )
+    lt_df["speed_min"] = 0
+    
+    gt_df = odf["speed_bin"].str.extract(
+        r"=>\s*(?P<speed_min>\d+)"
+    )
+    gt_df["speed_max"] = pd.NA
+    
+
+    odf["speed_min"] = (
+        range_df["speed_min"]
+        .combine_first(gt_df["speed_min"])
+        .combine_first(lt_df["speed_min"])
+    )
+
+    odf["speed_max"] = (
+        range_df["speed_max"]
+        .combine_first(lt_df["speed_max"])
+        .combine_first(gt_df["speed_max"])
+    )
+
+    return odf
 
 # Example usage
 if __name__ == "__main__":
     excel_file = "raw_data/Worcestershire Traffic Data - Master.xlsx"
-    sheet_name = "2024 Drake Av"
-
-    result = parse_speed_sheet(excel_file, sheet_name)
-    # print(result)
 
     # get sheet names
-    sheets  = [
-               '2024 Oldbury Rd', 
+    sheets  = ['2024 Oldbury Rd', 
                '2024 Merrimans Hill Rd', 
                '2024 Hallow Rd', 
                '2024 Henwick Rd (St Clements)', 
@@ -248,17 +295,23 @@ locations = []
 for sheet in sheets:
     print("Processing sheet: ", sheet)
     location_data = parse_speed_sheet(excel_file, sheet)
-    if not is_valid_lat_lon(location_data.get("lat"), location_data.get("lon")):
-        print(f"Skipping {sheet}: invalid lat/lon")
-        continue
+    # if not is_valid_lat_lon(location_data.get("lat"), location_data.get("lon")):
+    #     print(f"Skipping {sheet}: invalid lat/lon")
+    #     continue
     
     if location_data:  # optional safety check
-        locations.append(location_data)
+        locations.extend(location_data)  # 👈 flatten here
+
+odf = pd.DataFrame(locations)
+
+odf.to_csv('raw_data/speed_data_raw.csv', index=False)
 
 # ensure output directory exists
 output_path = Path("data")
 output_path.mkdir(parents=True, exist_ok=True)
 
+
+
 # write JSON
-with open(output_path / "locations.json", "w", encoding="utf-8") as f:
-    json.dump(locations, f, indent=2)
+#with open(output_path / "locations.json", "w", encoding="utf-8") as f:
+    #json.dump(locations, f, indent=2)
