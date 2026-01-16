@@ -76,12 +76,7 @@ const locations = await loadData()
 
 
  
-  map.addControl(
-  new MarkerSizeControl({
-    markers,
-    stats
-  })
-);
+  map.addControl(new MarkerSizeControl(markers, stats));
   updateMarkerSizes(markers, 'fixed', stats)
   initOverlay()
 })()

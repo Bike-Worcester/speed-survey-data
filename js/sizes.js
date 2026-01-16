@@ -65,23 +65,30 @@ function getMarkerRadius(location, metricKey, stats) {
 }
 
 function updateMarkerSizes(markers, mode, stats) {
+  if (!Array.isArray(markers)) {
+    console.warn('Markers not ready');
+    return;
+  }
+
   markers.forEach(({ marker, location }) => {
     const radius = getMarkerRadius(location, mode, stats);
     marker.setRadius(radius);
   });
 }
 
+
 const MarkerSizeControl = L.Control.extend({
   options: {
-    position: 'topleft',
-    markers: [],
-    stats: null
-  }
-  ,
+    position: 'topleft'
+  },
 
-  onAdd: function() {
-    const { markers, stats } = this.options;
+  initialize: function(markers, stats, options = {}) {
+    L.Util.setOptions(this, options);
+    this._markers = markers;
+    this._stats = stats;
+  },
 
+  onAdd: function(map) {
     const container = L.DomUtil.create(
       'div',
       'leaflet-bar leaflet-control leaflet-control-custom'
@@ -99,8 +106,9 @@ const MarkerSizeControl = L.Control.extend({
     select.value = 'fixed';
 
     L.DomEvent.disableClickPropagation(container);
+
     L.DomEvent.on(select, 'change', e => {
-      updateMarkerSizes(markers, e.target.value, stats);
+      updateMarkerSizes(this._markers, e.target.value, this._stats);
     });
 
     return container;
