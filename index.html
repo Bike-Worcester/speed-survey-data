@@ -18,7 +18,6 @@
   <script src="js/data.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/sizes.js"></script>
-
   <script src="js/map.js"></script>
   
 </head>
@@ -74,9 +73,13 @@ const locations = await loadData()
 
   const stats = computeMetricStats(locations)
 
+  console.log('markers on load: ', markers)
+
 
  
   map.addControl(new MarkerSizeControl(markers, stats));
+
+  console.log('markers after control: ', markers)
   updateMarkerSizes(markers, 'fixed', stats)
   initOverlay()
 })()
