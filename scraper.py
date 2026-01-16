@@ -304,6 +304,13 @@ for sheet in sheets:
 
 odf = pd.DataFrame(locations)
 
+#set the limit for 2024 Droitwich Rd (N) to 40
+odf.loc[odf['road_name'] == '2024 Droitwich Rd (N)', 'limit'] = 40
+
+#set the limit for 2023 Bransford Rd to 40
+odf.loc[odf['road_name'] == '2023 Bransford Rd', 'limit'] = 40
+
+
 odf.to_csv('raw_data/speed_data_raw.csv', index=False)
 
 # ensure output directory exists

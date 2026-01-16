@@ -55,8 +55,10 @@
     <h4>Vehicles per minute by time of day</h4>
     <canvas id="timeChart"></canvas>
   </div>
-</div>
-      </div>
+      <p class="footnote">Data analysis by <a href="www.velocraft.co.uk">Velocraft</a></p>
+      <p class="footnote">Source: Worcestershire County Council Speed Survey data via FOI request</p>
+ </div>
+  </div>
 
 <script>
   // --- Sample data ---
@@ -75,13 +77,18 @@ const locations = await loadData()
 
   console.log('markers on load: ', markers)
 
-
  
   map.addControl(new MarkerSizeControl(markers, stats));
 
   console.log('markers after control: ', markers)
   updateMarkerSizes(markers, 'fixed', stats)
   initOverlay()
+
+map.attributionControl.addAttribution(
+  '<a href="https://www.velocraft.co.uk" target="_blank">Velocraft</a>'
+);
+
+
 })()
 </script>
 

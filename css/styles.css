@@ -17,6 +17,10 @@ body {
       padding: 1rem;
       display: none;
     }
+    
+    .footnote {
+      font-size: .8rem;
+    }
 
     .detail-header {
       position: sticky;
