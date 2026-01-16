@@ -17,6 +17,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="js/data.js"></script>
   <script src="js/charts.js"></script>
+  <script src="js/sizes.js"></script>
 
   <script src="js/map.js"></script>
   
@@ -69,8 +70,19 @@ const locations = await loadData()
 
   const charts = new ChartView();
 
-  addLocations(map, locations, charts)
+  const markers = addLocations(map, locations, charts)
 
+  const stats = computeMetricStats(locations)
+
+
+ 
+  map.addControl(
+  new MarkerSizeControl({
+    markers,
+    stats
+  })
+);
+  updateMarkerSizes(markers, 'fixed', stats)
   initOverlay()
 })()
 </script>
