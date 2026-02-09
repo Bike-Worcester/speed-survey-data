@@ -213,6 +213,11 @@ summary["end_date"] = pd.to_datetime(
     summary["end_date"], dayfirst=True
 ).dt.strftime("%Y-%m-%d")
 
+# 🔴 NEW: Filter out rows with missing or invalid coordinates
+summary = summary.dropna(subset=["lat", "lon"])
+
+# Additionally, ensure they aren't 0.0 or non-numeric strings
+summary = summary[(summary["lat"] != 0) & (summary["lon"] != 0)]
 
 summary.to_json("data/locations.json", orient="records", indent=2)
 print("Saved summary to speed_summary.json")
