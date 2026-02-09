@@ -27,7 +27,10 @@
 
 import pandas as pd
 
-df = pd.read_csv("raw_data/speed_data_raw.csv")
+odf = pd.read_csv("raw_data/speed_data_raw.csv")
+df25 = pd.read_csv("raw_data/speed_data_2025_raw.csv")
+
+df = pd.concat([odf, df25], ignore_index=True)
 
 df["name"] = df["road_name"]
 
@@ -90,7 +93,9 @@ vehicles_speeding_7_7 = df[speeding_mask & daytime_mask].groupby("name")["value"
 # Vehicles speeding (24h)
 vehicles_speeding = df[speeding_mask].groupby("name")["value"].sum()/24/60
 
+excess_speed_mask = df["speed_min"] >= df["limit"] + 15
 
+excess_speeding_vehicles = df[excess_speed_mask].groupby("name")["value"].sum()
 
 valid_bins = [
     '<5', '5-<10', '10-<15', '15-<20', '20-<25', '25-<30', '30-<35', '35-<40',
@@ -131,7 +136,8 @@ summary = pd.DataFrame({
     "vehicles_speeding_7_7_per_min": vehicles_speeding_7_7,
     "vehicles_speeding_per_min": vehicles_speeding,
     "distribution": pivot_df["speed_values"],
-    "time": time_df["time_values"]
+    "time": time_df["time_values"],
+    "excess_speeding_vehicles_per_day": excess_speeding_vehicles,
 }).fillna(0)  # fill roads with no speeding vehicles
 
 # Reset index if needed
@@ -192,6 +198,7 @@ if distribution_sum_check.any():
     # Round distribution and vehicle counts
 summary["distribution"] = summary["distribution"].apply(lambda x: [int(round(v, 0)) for v in x])
 summary["total_vehicles_per_min"] = summary["total_vehicles_per_min"].round(1)
+summary["excess_speeding_vehicles_per_day"] = summary["excess_speeding_vehicles_per_day"].round(2)
 summary["time"] = summary["time"].apply(lambda x: [round(v/60, 1) for v in x])
 summary["vehicles_7_7_per_min"] = summary["vehicles_7_7_per_min"].round(1)
 summary["vehicles_speeding_7_7_per_min"] = summary["vehicles_speeding_7_7_per_min"].round(2)
@@ -209,3 +216,16 @@ summary["end_date"] = pd.to_datetime(
 
 summary.to_json("data/locations.json", orient="records", indent=2)
 print("Saved summary to speed_summary.json")
+
+summary.to_csv('raw_data/summary.csv')
+
+
+def rank_surveys(metric):
+    print(metric)
+    print(summary.sort_values(by=metric, ascending=False).head(10)[["name", metric]])
+
+rank_surveys("vehicles_speeding_7_7_per_min")
+rank_surveys("percent_speeding_7_7")
+rank_surveys("total_vehicles_per_min")
+rank_surveys("vehicles_7_7_per_min")
+rank_surveys("excess_speeding_vehicles_per_day")
