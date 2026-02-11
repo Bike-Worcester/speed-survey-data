@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bike Worcester Speed Data</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background: white; }
+        .chart-container { position: relative; height: 500px; width: 100%; max-width: 900px; margin: auto; }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <canvas id="speedChart"></canvas>
+    </div>
+
+    <script>
+        async function loadChart() {
+            try {
+                // Fetch the JSON file from the same directory
+                const response = await fetch('data/percent_speeding_7_7.json');
+                const jsonData = await response.json();
+
+                // Sort by percentage descending
+                jsonData.sort((a, b) => b.value - a.value);
+
+                const ctx = document.getElementById('speedChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: jsonData.map(item => item.name),
+                        datasets: [{
+                            label: '% of Vehicles Speeding',
+                            data: jsonData.map(item => item.value),
+
+                           // borderColor: 'rgb(235, 77, 75)',
+                            //borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: true, text: '% Vehicles over Limit (7am-7pm)', font: { size: 16 } }
+                        },
+                    }
+                });
+            } catch (error) {
+                console.error("Error loading JSON data:", error);
+            }
+        }
+
+        loadChart();
+    </script>
+</body>
+</html>

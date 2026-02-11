@@ -30,7 +30,7 @@ import pandas as pd
 odf = pd.read_csv("raw_data/speed_data_raw.csv")
 df25 = pd.read_csv("raw_data/speed_data_2025_raw.csv")
 
-df = pd.concat([odf, df25], ignore_index=True)
+df = pd.concat([odf], ignore_index=True)
 
 df["name"] = df["road_name"]
 
@@ -214,20 +214,25 @@ summary["end_date"] = pd.to_datetime(
 ).dt.strftime("%Y-%m-%d")
 
 # 🔴 NEW: Filter out rows with missing or invalid coordinates
+
 summary = summary.dropna(subset=["lat", "lon"])
 
 # Additionally, ensure they aren't 0.0 or non-numeric strings
 summary = summary[(summary["lat"] != 0) & (summary["lon"] != 0)]
 
-summary.to_json("data/locations.json", orient="records", indent=2)
-print("Saved summary to speed_summary.json")
+#summary.to_json("data/locations.json", orient="records", indent=2)
+#print("Saved summary to speed_summary.json")
 
 summary.to_csv('raw_data/summary.csv')
 
 
 def rank_surveys(metric):
     print(metric)
-    print(summary.sort_values(by=metric, ascending=False).head(10)[["name", metric]])
+    chart = summary.sort_values(by=metric, ascending=False).head(10)[["name", metric]]
+    summary["value"] = summary[metric]
+    chart = summary.sort_values(by=metric, ascending=False).head(10)[["name", "value"]]
+    print(chart)
+    chart.to_json("data/" + metric + ".json", orient="records", indent=2)
 
 rank_surveys("vehicles_speeding_7_7_per_min")
 rank_surveys("percent_speeding_7_7")
